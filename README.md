@@ -16,7 +16,7 @@ This is a simple job posting board built with **Flask**, **WTForms**, and **SQLA
 
 ### 🔍 Job Details Page
 
-<img src="photos/jop1.png" width="700">
+<img src="photos/job1.png" width="700">
 
 ---
 
