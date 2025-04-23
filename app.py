@@ -4,6 +4,10 @@ from flask_migrate import Migrate
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
+from flask_jwt_extended import JWTManager, jwt_required
+from flask import request, jsonify
+from flask_wtf.csrf import CSRFProtect
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
@@ -82,6 +86,68 @@ def job_details(job_id):
     job_instance = Job.query.get(job_id) 
     return render_template('job.html', job=job_instance) 
 
+
+# lab 3 add CRUD operations-----------
+
+# GET all companies
+@app.route('/api/companies', methods=['GET'])
+def get_companies():
+    companies = Job.query.all()
+    return jsonify([c.to_dict() for c in companies]), 200
+
+# GET single company
+@app.route('/api/companies/<int:id>', methods=['GET'])
+def get_company(id):
+    company = Job.query.get_or_404(id)
+    return jsonify(company.to_dict()), 200
+
+#  Create new company (authenticated users only)
+@app.route('/api/companies', methods=['POST'])
+@jwt_required()
+def create_company():
+    data = request.get_json()
+    new_company = Job(
+        name=data['name'],
+        description=data['description'],
+        employees_count=data.get('employees_count', 0),
+        location=data['location']
+    )
+    db.session.add(new_company)
+    db.session.commit()
+    return jsonify({"message": "Company created successfully!"}), 201
+
+#  Update a company (authenticated users only)
+@app.route('/api/companies/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_company(id):
+    company = Job.query.get_or_404(id)
+    data = request.get_json()
+    company.name = data['name']
+    company.description = data['description']
+    company.employees_count = data.get('employees_count', company.employees_count)
+    company.location = data['location']
+    db.session.commit()
+    return jsonify({"message": "Company updated successfully!"}), 200
+
+#  Delete a company (authenticated users only)
+@app.route('/api/companies/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_company(id):
+    company = Job.query.get_or_404(id)
+    db.session.delete(company)
+    db.session.commit()
+    return jsonify({"message": "Company deleted successfully!"}), 200
+
+class CompanyForm(FlaskForm):
+    name = StringField('Company Name', validators=[DataRequired()])
+    description = StringField('Description', validators=[DataRequired()])
+    employees_count = StringField('Employees Count')
+    location = StringField('Location', validators=[DataRequired()])
+    submit = SubmitField('Create Company')
+
+
+
 if __name__ == '__main__':
+    
    
     app.run(debug=True)
